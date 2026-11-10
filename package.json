@@ -1,0 +1,20 @@
+{
+  "name": "lunaflow-agent-studio",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "botframework-webchat": "4.19.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  },
+  "overrides": {
+    "katex": "0.19.1",
+    "sanitize-html": "2.18.1",
+    "valibot": "1.5.0"
+  }
+}
