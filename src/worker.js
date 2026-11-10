@@ -1,17 +1,9 @@
 import assets from 'lunaflow:assets';
 
-const secretKeys = new Map([
-  ['helper', 'DIRECT_LINE_HELPER_SECRET'],
-  ['director', 'DIRECT_LINE_DIRECTOR_SECRET'],
-  ['vfx', 'DIRECT_LINE_VFX_SECRET'],
-]);
-const tokenPath = '/api/direct-line/';
-const directLine = 'https://directline.botframework.com/v3/directline';
-const siteOrigin = 'https://lunaflow-agent-studio.sunsetcatkin1.chatgpt.site';
+import { issueDirectLineToken, json } from './direct-line.mjs';
 
-function json(data, status) {
-  return Response.json(data, { status, headers: { 'Cache-Control': 'no-store' } });
-}
+const tokenPath = '/api/direct-line/';
+const siteOrigin = 'https://lunaflow-agent-studio.sunsetcatkin1.chatgpt.site';
 
 async function issueToken(request, env, agentId) {
   if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
@@ -19,26 +11,7 @@ async function issueToken(request, env, agentId) {
     return json({ error: 'forbidden' }, 403);
   }
 
-  const key = secretKeys.get(agentId);
-  if (!key) return json({ error: 'unknown_agent' }, 404);
-  const secret = env[key];
-  if (!secret) return json({ error: 'not_configured' }, 503);
-
-  try {
-    const response = await fetch(`${directLine}/tokens/generate`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ trustedOrigins: [siteOrigin] }),
-      signal: AbortSignal.timeout(10000),
-    });
-    if (response.ok) {
-      const { token } = await response.json();
-      if (typeof token === 'string' && token) return json({ token, domain: directLine }, 200);
-    }
-  } catch {
-    // Upstream responses and credentials stay on the server.
-  }
-  return json({ error: 'token_unavailable' }, 502);
+  return issueDirectLineToken(env, agentId, siteOrigin);
 }
 
 export default {

@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { build } from 'esbuild';
 
@@ -24,20 +24,27 @@ const assets = {
   '/bundles/chat-runtime.js': ['text/javascript; charset=utf-8', chatScript],
 };
 
-await build({
-  entryPoints: ['src/worker.js'],
-  outfile: 'dist/server/index.js',
-  bundle: true,
-  format: 'esm',
-  minify: true,
-  plugins: [{
-    name: 'site-assets',
-    setup(builder) {
-      builder.onResolve({ filter: /^lunaflow:assets$/ }, () => ({ path: 'assets', namespace: 'site' }));
-      builder.onLoad({ filter: /^assets$/, namespace: 'site' }, () => ({
-        contents: JSON.stringify(assets),
-        loader: 'json',
-      }));
-    },
-  }],
-});
+if (process.argv.includes('--netlify')) {
+  await mkdir('netlify-dist/bundles', { recursive: true });
+  await Promise.all(Object.entries(assets).map(([pathname, [, content]]) =>
+    writeFile('netlify-dist' + (pathname === '/' ? '/index.html' : pathname), content)
+  ));
+} else {
+  await build({
+    entryPoints: ['src/worker.js'],
+    outfile: 'dist/server/index.js',
+    bundle: true,
+    format: 'esm',
+    minify: true,
+    plugins: [{
+      name: 'site-assets',
+      setup(builder) {
+        builder.onResolve({ filter: /^lunaflow:assets$/ }, () => ({ path: 'assets', namespace: 'site' }));
+        builder.onLoad({ filter: /^assets$/, namespace: 'site' }, () => ({
+          contents: JSON.stringify(assets),
+          loader: 'json',
+        }));
+      },
+    }],
+  });
+}
